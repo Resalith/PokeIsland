@@ -7,6 +7,8 @@ import {
     Heading,
     Select,
     TextInput,
+    RadioButtonGroup,
+    RadioButton
 } from "grommet";
 import {getPokemonsObj, getPokemonForms} from "../Functions/Backend";
 
@@ -23,24 +25,28 @@ export class AddTeam extends Component {
             name: '',
             pokemonList: [],
             filterPokemonList: [],
-            pokemonsObj: [],
+            genderOptions: [
+                { label: "Male", value: "1" },
+                { label: "Female", value: "2" }
+            ] ,
+            gendersDisabled: false,
             selectedPokemonForms: [],
             createPokemonObj: {
                 number: 0,
                 name: '',
                 nickName: '',
                 form: '',
-                gender: undefined,
+                gender: '',
                 lv: 0,
-                nature: undefined,
-                item: undefined,
+                nature: '',
+                item: '',
                 stats: {
-                    hp: undefined,
-                    attack: undefined,
-                    defense: undefined,
-                    specialAttack: undefined,
-                    specialDef: undefined,
-                    speed: undefined
+                    hp: 0,
+                    attack: 0,
+                    defense: 0,
+                    specialAttack: 0,
+                    specialDef: 0,
+                    speed: 0
                 },
 
             }
@@ -57,7 +63,7 @@ export class AddTeam extends Component {
                     busy: false,
                     pokemonList: response.data.map(poke => poke['pokemon']),
                     filterPokemonList: response.data.map(poke => poke['pokemon']),
-                }, () => console.log("ALL POKEMON: ", this.state.allPokemon));
+                });
             })
             .catch(error => {
                 this.setState({ error, busy: false });
@@ -66,31 +72,36 @@ export class AddTeam extends Component {
     }
 
     _updatePokeBasicOptions(name){
-        console.log("Updating Basic Options")
-        const pokemonSelected = this.state.allPokemon.find(pokemon => pokemon.pokemon === name)
+        const pokemonSelected = this.state.allPokemon.find(pokemon => pokemon['pokemon'] === name)
+        if (this.state.debug) console.log('Pokemon Selected', pokemonSelected.number)
 
         this.setState({
             createPokemonObj: {
                 name: name,
                 number: pokemonSelected.number,
-                gender: (pokemonSelected.gender === '3' ? null : pokemonSelected.gender)
             }
-        }, () => this._getForms(pokemonSelected.number))
+        } )
+        this._getForms(pokemonSelected.number)
     }
 
     _getForms(pokeNumber){
+        let forms = []
         getPokemonForms(pokeNumber, 'es')
             .then(response => {
-                if (this.state.debug) console.log('Forms Response Data', response.data)
+                //if (this.state.debug) console.log('Forms Response Data', response.data)
+                forms = response.data.map(poke => poke['forms'])
+                if (this.state.debug) console.log("Pokemon Forms: ", forms)
 
-                this.setState({
-                    selectedPokemonForms: response.data.map(poke => poke['forms']),
-                    busy: false,
-                }, () => console.log("Pokemon Forms: ", this.state.selectedPokemonForms));
             })
             .catch(error => {
                 this.setState({ error, busy: false });
             });
+        return forms
+    }
+
+    _updatePokemonGender(gender){
+
+
     }
 
 
@@ -136,6 +147,7 @@ export class AddTeam extends Component {
                                         <FormField label="Name" error={errors.name}>
                                             <Select
                                                 name="name"
+                                                disabled = {this.state.gendersDisabled}
                                                 size="medium"
                                                 placeholder="Select"
                                                 value={this.state.createPokemonObj.name}
@@ -160,6 +172,21 @@ export class AddTeam extends Component {
                                         </FormField>
                                         </Box>
                                     </Box>
+                                        <Box direction ="row">
+                                            <FormField label="Gender" error={errors.gender}>
+                                                <Select
+                                                    name="gender"
+                                                    disabled = {this.state.gendersDisabled}
+                                                    size="medium"
+                                                    placeholder="Select"
+                                                    value={this.state.createPokemonObj.gender}
+                                                    options={this.state.genderOptions.map(gender => gender.label)}
+                                                    onChange={({ option }) => this._updatePokemonGender(option)}
+
+                                                />
+
+                                            </FormField>
+                                        </Box>
                                     <Box
                                         tag="footer"
                                         margin={{ top: "medium" }}
