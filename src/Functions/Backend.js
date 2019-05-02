@@ -30,3 +30,19 @@ export function  getPokemonForms(pokeNumber, lang) {
     }
 
 }
+
+export function  getNatures(lang) {
+
+    const backendURL = '/tools/vgform/nature.php?code='+lang
+
+    const myHeaders = {
+        Accept: 'application/json'
+    };
+
+    try {
+        return axios.get(backendURL, myHeaders)
+    } catch (error) {
+        console.error('error:', error)
+    }
+
+}

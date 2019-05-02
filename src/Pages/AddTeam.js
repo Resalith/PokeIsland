@@ -10,7 +10,7 @@ import {
     RadioButtonGroup,
     RadioButton
 } from "grommet";
-import {getPokemonsObj, getPokemonForms} from "../Functions/Backend";
+import {getPokemonsObj, getPokemonForms, getNatures} from "../Functions/Backend";
 
 export class AddTeam extends Component {
 
@@ -22,17 +22,15 @@ export class AddTeam extends Component {
             error: {},
             submitted: false,
             allPokemon: {},
-            name: '',
             pokemonList: [],
             filterPokemonList: [],
-            genderOptions: [
-                { label: "Male", value: "1" },
-                { label: "Female", value: "2" }
-            ] ,
-            gendersDisabled: false,
+            genderSelected: '' ,
+            gendersDisabled: true,
+            natures: '',
+            natureSelected: '',
             selectedPokemonForms: [],
             createPokemonObj: {
-                number: 0,
+                number: null,
                 name: '',
                 nickName: '',
                 form: '',
@@ -68,10 +66,11 @@ export class AddTeam extends Component {
             .catch(error => {
                 this.setState({ error, busy: false });
             });
+
         this.setState({ busy: true, response: {}, error: {}})
     }
 
-    _updatePokeBasicOptions(name){
+    _onSelectPokemon(name){
         const pokemonSelected = this.state.allPokemon.find(pokemon => pokemon['pokemon'] === name)
         if (this.state.debug) console.log('Pokemon Selected', pokemonSelected.number)
 
@@ -79,9 +78,13 @@ export class AddTeam extends Component {
             createPokemonObj: {
                 name: name,
                 number: pokemonSelected.number,
+                gender: pokemonSelected.gender,
+                gendersDisabled: pokemonSelected.gender === 3 ? false : true
             }
-        } )
+        }, () => console.log("Pokemon Object Updated:", this.state.createPokemonObj) )
         this._getForms(pokemonSelected.number)
+        this._getNatures()
+
     }
 
     _getForms(pokeNumber){
@@ -99,9 +102,48 @@ export class AddTeam extends Component {
         return forms
     }
 
+    _getNatures(){
+
+
+        getNatures('es')
+            .then(response => {
+                if (this.state.debug) console.log('Natures Response Data', response.data)
+
+                this.setState({
+                    natures: response.data,
+                    busy: false,
+                });
+            })
+            .catch(error => {
+                this.setState({ error, busy: false });
+            });
+
+    }
+
     _updatePokemonGender(gender){
 
+        if (gender === 'Male'){
+            this.setState({
+                createPokemonObj: {gender: 1},
+                genderSelected: gender
+            })
+        }else{
+            this.setState({
+                createPokemonObj: {gender: 2},
+                genderSelected: gender
+            })
+        }
 
+    }
+
+    _updateNature(nature){
+        const natureSelected = this.state.natures.find(n => n['nature'] === nature)
+        console.log("NATURE SELECTED:", nature, natureSelected)
+
+        this.setState({
+            createPokemonObj: {nature: natureSelected.number},
+            natureSelected: nature
+        }, () => console.log("Nature Updated:", this.state.createPokemonObj.nature))
     }
 
 
@@ -147,12 +189,11 @@ export class AddTeam extends Component {
                                         <FormField label="Name" error={errors.name}>
                                             <Select
                                                 name="name"
-                                                disabled = {this.state.gendersDisabled}
                                                 size="medium"
                                                 placeholder="Select"
                                                 value={this.state.createPokemonObj.name}
                                                 options={this.state.filterPokemonList}
-                                                onChange={({ option }) => this._updatePokeBasicOptions(option)}
+                                                onChange={({ option }) => this._onSelectPokemon(option)}
                                                 onClose={() => this.setState({ filterPokemonList: this.state.pokemonList })}
                                                 onSearch={text => {
                                                     const exp = new RegExp(text, "i");
@@ -172,16 +213,34 @@ export class AddTeam extends Component {
                                         </FormField>
                                         </Box>
                                     </Box>
+
                                         <Box direction ="row">
-                                            <FormField label="Gender" error={errors.gender}>
+                                            {this.state.createPokemonObj.gender === '3'
+                                            ?
+                                                (
+                                                    <FormField label="Gender" error={errors.gender}>
+                                                        <Select
+                                                            name="gender"
+                                                            disabled = {this.state.gendersDisabled}
+                                                            size="medium"
+                                                            placeholder="Select"
+                                                            value={this.state.genderSelected}
+                                                            options={['Male', 'Female']}
+                                                            onChange={({ option }) => this._updatePokemonGender(option)}
+
+                                                        />
+
+                                                    </FormField>
+                                                ):null
+                                            }
+                                            <FormField label="Nature" error={errors.nature}>
                                                 <Select
-                                                    name="gender"
-                                                    disabled = {this.state.gendersDisabled}
+                                                    name="nature"
                                                     size="medium"
                                                     placeholder="Select"
-                                                    value={this.state.createPokemonObj.gender}
-                                                    options={this.state.genderOptions.map(gender => gender.label)}
-                                                    onChange={({ option }) => this._updatePokemonGender(option)}
+                                                    value={this.state.natureSelected}
+                                                    options={this.state.natures? this.state.natures.map(nature => nature['nature']):[]}
+                                                    onChange={({ option }) => this._updateNature(option)}
 
                                                 />
 
