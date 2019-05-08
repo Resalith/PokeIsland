@@ -46,3 +46,20 @@ export function  getNatures(lang) {
     }
 
 }
+
+
+export function  getItems(lang) {
+
+    const backendURL = '/tools/vgform/items.php?code='+lang
+
+    const myHeaders = {
+        Accept: 'application/json'
+    };
+
+    try {
+        return axios.get(backendURL, myHeaders)
+    } catch (error) {
+        console.error('error:', error)
+    }
+
+}

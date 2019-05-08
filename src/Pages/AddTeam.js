@@ -8,9 +8,10 @@ import {
     Select,
     TextInput,
     RadioButtonGroup,
-    RadioButton
+    RadioButton,
+    CheckBox
 } from "grommet";
-import {getPokemonsObj, getPokemonForms, getNatures} from "../Functions/Backend";
+import {getPokemonsObj, getPokemonForms, getNatures, getItems} from "../Functions/Backend";
 
 export class AddTeam extends Component {
 
@@ -22,12 +23,18 @@ export class AddTeam extends Component {
             error: {},
             submitted: false,
             allPokemon: {},
+            forms: [],
+            allItemsObj: [],
+            filterItems: [],
+            itemsList: [],
+            itemSelected: '',
             pokemonList: [],
             filterPokemonList: [],
-            genderSelected: '' ,
-            gendersDisabled: true,
-            natures: '',
+            gendersDisabled: false,
+            natures: [],
+            allNaturesObj: null,
             natureSelected: '',
+            formSelected: '',
             selectedPokemonForms: [],
             createPokemonObj: {
                 number: null,
@@ -72,19 +79,32 @@ export class AddTeam extends Component {
 
     _onSelectPokemon(name){
         const pokemonSelected = this.state.allPokemon.find(pokemon => pokemon['pokemon'] === name)
-        if (this.state.debug) console.log('Pokemon Selected', pokemonSelected.number)
 
         this.setState({
+            gendersDisabled: pokemonSelected.gender === "3" ? false : true,
             createPokemonObj: {
+                ...this.state.createPokemonObj,
                 name: name,
                 number: pokemonSelected.number,
                 gender: pokemonSelected.gender,
-                gendersDisabled: pokemonSelected.gender === 3 ? false : true
             }
-        }, () => console.log("Pokemon Object Updated:", this.state.createPokemonObj) )
-        this._getForms(pokemonSelected.number)
+        })
         this._getNatures()
+        this._getForms(pokemonSelected.number)
+        this._getItems()
 
+    }
+
+    _onSelectItem(value){
+        const itemSelected = this.state.allItemsObj.find(item => item['item'] === value)
+
+        this.setState({
+            createPokemonObj: {
+                ...this.state.createPokemonObj,
+                item: itemSelected.number
+            },
+            itemSelected: itemSelected.item
+        }, () => console.log("Pokemon Item Updated: ", this.state.createPokemonObj))
     }
 
     _getForms(pokeNumber){
@@ -94,12 +114,30 @@ export class AddTeam extends Component {
                 //if (this.state.debug) console.log('Forms Response Data', response.data)
                 forms = response.data.map(poke => poke['forms'])
                 if (this.state.debug) console.log("Pokemon Forms: ", forms)
+                this.setState({
+                    forms: response.data
+                }, () => console.log("Forms Available: ", this.state.forms))
 
             })
             .catch(error => {
                 this.setState({ error, busy: false });
             });
         return forms
+    }
+
+    _getItems(){
+        getItems('es')
+            .then(response => {
+                this.setState({
+                    allItemsObj: response.data,
+                    itemsList: response.data.map(item => item['item']),
+                    filterItems: response.data.map(item => item['item']),
+                }, () => console.log("Items Available: ", this.state.itemsList))
+
+            })
+            .catch(error => {
+                this.setState({ error, busy: false });
+            });
     }
 
     _getNatures(){
@@ -110,7 +148,8 @@ export class AddTeam extends Component {
                 if (this.state.debug) console.log('Natures Response Data', response.data)
 
                 this.setState({
-                    natures: response.data,
+                    allNaturesObj: response.data,
+                    natures: response.data.map(nature => nature['nature']),
                     busy: false,
                 });
             })
@@ -120,31 +159,49 @@ export class AddTeam extends Component {
 
     }
 
-    _updatePokemonGender(gender){
-
-        if (gender === 'Male'){
-            this.setState({
-                createPokemonObj: {gender: 1},
-                genderSelected: gender
-            })
-        }else{
-            this.setState({
-                createPokemonObj: {gender: 2},
-                genderSelected: gender
-            })
-        }
-
-    }
 
     _updateNature(nature){
-        const natureSelected = this.state.natures.find(n => n['nature'] === nature)
+        const natureSelected = this.state.allNaturesObj.find(n => n['nature'] === nature)
         console.log("NATURE SELECTED:", nature, natureSelected)
 
         this.setState({
-            createPokemonObj: {nature: natureSelected.number},
+            createPokemonObj: {
+                ...this.state.createPokemonObj,
+                nature: natureSelected.number
+            },
             natureSelected: nature
-        }, () => console.log("Nature Updated:", this.state.createPokemonObj.nature))
+        }, () => console.log("Nature Updated:", this.state.createPokemonObj.number))
     }
+
+    _updateForm(value){
+        const formSelected = this.state.forms.find(form => form['forms'] === value)
+
+        this.setState({
+            createPokemonObj: {
+                ...this.state.createPokemonObj,
+                form: formSelected.number
+            },
+            formSelected: value
+        }, () => console.log("Pokemon FORM Updated:", this.state.createPokemonObj))
+    }
+
+    onMaleChange = event => this.setState({
+        maleChecked: true,
+        femaleChecked: false,
+        createPokemonObj: {
+            ...this.state.createPokemonObj,
+            gender: "1"}
+    }, () => console.log("Pokemon Gender Updated: ", this.state.createPokemonObj));
+
+
+    onFemaleChange = event => this.setState({
+        femaleChecked: true,
+        maleChecked: false,
+        createPokemonObj: {
+            ...this.state.createPokemonObj,
+            gender: "2"
+        }
+    }, () => console.log("Pokemon Gender Updated: ", this.state.createPokemonObj));
 
 
 
@@ -211,41 +268,71 @@ export class AddTeam extends Component {
                                                 onChange={({ option }) => this.setState({ createPokemonObj: {nickname: option} })}
                                             />
                                         </FormField>
+
                                         </Box>
                                     </Box>
 
                                         <Box direction ="row">
-                                            {this.state.createPokemonObj.gender === '3'
+                                            {this.state.gendersDisabled === true
                                             ?
                                                 (
-                                                    <FormField label="Gender" error={errors.gender}>
-                                                        <Select
-                                                            name="gender"
-                                                            disabled = {this.state.gendersDisabled}
-                                                            size="medium"
-                                                            placeholder="Select"
-                                                            value={this.state.genderSelected}
-                                                            options={['Male', 'Female']}
-                                                            onChange={({ option }) => this._updatePokemonGender(option)}
-
-                                                        />
-
-                                                    </FormField>
+                                                    <Box direction ="row">
+                                                        <FormField label="Gender" error={errors.gender}>
+                                                            <Box direction="row">
+                                                                <Box pad={{ horizontal: "small", vertical: "xsmall" }} direction="row">
+                                                                    <CheckBox id="1" label="Male" values={values.gender = this.state.maleChecked? "1" : null} checked={this.state.maleChecked} onChange={this.onMaleChange} />
+                                                                </Box>
+                                                                <Box  direction="row">
+                                                                    <CheckBox id="2" label="Female" values={values.gender = this.state.femaleChecked? "2" : null} checked={this.state.femaleChecked} onChange={this.onFemaleChange} />
+                                                                </Box>
+                                                            </Box>
+                                                        </FormField>
+                                                    </Box>
                                                 ):null
                                             }
-                                            <FormField label="Nature" error={errors.nature}>
-                                                <Select
-                                                    name="nature"
-                                                    size="medium"
-                                                    placeholder="Select"
-                                                    value={this.state.natureSelected}
-                                                    options={this.state.natures? this.state.natures.map(nature => nature['nature']):[]}
-                                                    onChange={({ option }) => this._updateNature(option)}
 
-                                                />
-
-                                            </FormField>
                                         </Box>
+                                    <FormField label="Nature" error={errors.nature}>
+                                        <Select
+                                            name="nature"
+                                            size="medium"
+                                            placeholder="Select"
+                                            value={this.state.natureSelected}
+                                            options={this.state.natures}
+                                            onChange={({ option }) => this._updateNature(option)}
+
+                                        />
+
+                                    </FormField>
+                                    <FormField label="Form" error={errors.form}>
+                                        <Select
+                                            name="form"
+                                            size="medium"
+                                            placeholder="Select"
+                                            value={this.state.formSelected}
+                                            options={this.state.forms ? this.state.forms.map(form => form['forms']): []}
+                                            onChange={({ option }) => this._updateForm(option)}
+
+                                        />
+
+                                    </FormField>
+                                    <FormField label="Item" error={errors.item}>
+                                        <Select
+                                            name="item"
+                                            size="medium"
+                                            placeholder="Select Item"
+                                            value={this.state.itemSelected}
+                                            options={this.state.filterItems}
+                                            onChange={({ option }) => this._onSelectItem(option)}
+                                            onClose={() => this.setState({ filterItems: this.state.itemsList })}
+                                            onSearch={text => {
+                                                const exp = new RegExp(text, "i");
+                                                this.setState({
+                                                    filterItems: this.state.itemsList.filter(o => exp.test(o))
+                                                }, () => console.log("onSearch:", text));
+                                            }}
+                                        />
+                                    </FormField>
                                     <Box
                                         tag="footer"
                                         margin={{ top: "medium" }}
