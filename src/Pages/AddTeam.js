@@ -11,7 +11,7 @@ import {
     RadioButton,
     CheckBox
 } from "grommet";
-import {getPokemonsObj, getPokemonForms, getNatures, getItems} from "../Functions/Backend";
+import {getPokemonsObj, getPokemonForms, getNatures, getItems, getStats} from "../Functions/Backend";
 
 export class AddTeam extends Component {
 
@@ -29,6 +29,30 @@ export class AddTeam extends Component {
             itemsList: [],
             itemSelected: '',
             pokemonList: [],
+            hpLimits: {
+                min: 0,
+                max: 0
+            },
+            attackLimits: {
+                min: 0,
+                max: 0
+            },
+            defenseLimits: {
+                min: 0,
+                max: 0
+            },
+            specialAttackLimits: {
+                min: 0,
+                max: 0
+            },
+            specialDefenseLimits: {
+                min: 0,
+                max: 0
+            },
+            speedLimits: {
+                min: 0,
+                max: 0
+            },
             filterPokemonList: [],
             gendersDisabled: false,
             natures: [],
@@ -37,12 +61,12 @@ export class AddTeam extends Component {
             formSelected: '',
             selectedPokemonForms: [],
             createPokemonObj: {
-                number: null,
+                number: '',
                 name: '',
                 nickName: '',
                 form: '',
                 gender: '',
-                lv: 0,
+                lv: '',
                 nature: '',
                 item: '',
                 stats: {
@@ -74,11 +98,16 @@ export class AddTeam extends Component {
                 this.setState({ error, busy: false });
             });
 
+        this._getItems()
+        this._getNatures()
+
+
         this.setState({ busy: true, response: {}, error: {}})
     }
 
     _onSelectPokemon(name){
         const pokemonSelected = this.state.allPokemon.find(pokemon => pokemon['pokemon'] === name)
+        console.log("Pokemon Selected: ", pokemonSelected)
 
         this.setState({
             gendersDisabled: pokemonSelected.gender === "3" ? false : true,
@@ -89,10 +118,8 @@ export class AddTeam extends Component {
                 gender: pokemonSelected.gender,
             }
         })
-        this._getNatures()
-        this._getForms(pokemonSelected.number)
-        this._getItems()
-
+        this._getForms(pokemonSelected.number);
+        this._getStats();
     }
 
     _onSelectItem(value){
@@ -159,10 +186,50 @@ export class AddTeam extends Component {
 
     }
 
+    _getStats(){
+        if (this.state.createPokemonObj.number !== '' && this.state.createPokemonObj.form !== '' && this.state.createPokemonObj.nature !== '' && this.state.createPokemonObj.lv !== ''){
+            const range = (start, stop, step) => Array.from({ length: (stop - start) / step + 1}, (_, i) => start + (i * step));
+            getStats(this.state.createPokemonObj.number, this.state.createPokemonObj.form, this.state.createPokemonObj.nature, this.state.createPokemonObj.lv)
+                .then(response => {
+                    if (this.state.debug) console.log('STATS Response Data', response.data)
+
+                    this.setState({
+                        hpLimits: {
+                            min: response.data.min[0],
+                            max: response.data.max[0]
+                        },
+                        attackLimits: {
+                            min: response.data.min[1],
+                            max: response.data.max[1]
+                        },
+                        defenseLimits: {
+                            min: response.data.min[2],
+                            max: response.data.max[2]
+                        },
+                        specialAttackLimits: {
+                            min: response.data.min[3],
+                            max: response.data.max[3]
+                        },
+                        specialDefenseLimits: {
+                            min: response.data.min[4],
+                            max: response.data.max[4]
+                        },
+                        speedLimits: {
+                            min: response.data.min[5],
+                            max: response.data.max[5]
+                        },
+                        busy: false,
+                    }, () => console.log("MIN/MAX STATS Updated: ", this.state));
+                })
+                .catch(error => {
+                    this.setState({ error, busy: false });
+                });
+        }
+    }
+
 
     _updateNature(nature){
         const natureSelected = this.state.allNaturesObj.find(n => n['nature'] === nature)
-        console.log("NATURE SELECTED:", nature, natureSelected)
 
         this.setState({
             createPokemonObj: {
@@ -170,7 +237,8 @@ export class AddTeam extends Component {
                 nature: natureSelected.number
             },
             natureSelected: nature
-        }, () => console.log("Nature Updated:", this.state.createPokemonObj.number))
+        }, () => {console.log("Pokemon NATURE Updated:", this.state.createPokemonObj); this._getStats();})
+
     }
 
     _updateForm(value){
@@ -182,7 +250,8 @@ export class AddTeam extends Component {
                 form: formSelected.number
             },
             formSelected: value
-        }, () => console.log("Pokemon FORM Updated:", this.state.createPokemonObj))
+        }, () => {this._getStats(); console.log("Pokemon FORM Updated: ", this.state.createPokemonObj)})
+
     }
 
     onMaleChange = event => this.setState({
@@ -205,9 +274,22 @@ export class AddTeam extends Component {
 
 
 
+    _updateNickname = event => this.setState({ createPokemonObj: {...this.state.createPokemonObj, nickName: event.target.value }}, () => console.log("Pokemon NICKNAME Updated: ", this.state.createPokemonObj));
+
+    _updateLevel = event => {
+        this.setState({
+            createPokemonObj: {
+                ...this.state.createPokemonObj,
+                lv: event.target.value
+            }
+        }, () => {console.log("Pokemon LEVEL Updated: ", this.state.createPokemonObj); this._getStats();});
+
+    }
+
 
     render() {
         const { submitted } = this.state;
+
         return (
                 <Box align="start">
                     <Box width="medium" margin="large">
@@ -264,34 +346,34 @@ export class AddTeam extends Component {
                                         <FormField label="Nickname" error={errors.nickName}>
                                             <TextInput
                                                 name="nickName"
-                                                value={this.state.createPokemonObj.nickName || ""}
-                                                onChange={({ option }) => this.setState({ createPokemonObj: {nickname: option} })}
+                                                value={this.state.createPokemonObj.nickName}
+                                                onChange={this._updateNickname}
                                             />
                                         </FormField>
 
                                         </Box>
                                     </Box>
-
-                                        <Box direction ="row">
-                                            {this.state.gendersDisabled === true
-                                            ?
-                                                (
-                                                    <Box direction ="row">
-                                                        <FormField label="Gender" error={errors.gender}>
-                                                            <Box direction="row">
-                                                                <Box pad={{ horizontal: "small", vertical: "xsmall" }} direction="row">
-                                                                    <CheckBox id="1" label="Male" values={values.gender = this.state.maleChecked? "1" : null} checked={this.state.maleChecked} onChange={this.onMaleChange} />
-                                                                </Box>
-                                                                <Box  direction="row">
-                                                                    <CheckBox id="2" label="Female" values={values.gender = this.state.femaleChecked? "2" : null} checked={this.state.femaleChecked} onChange={this.onFemaleChange} />
-                                                                </Box>
-                                                            </Box>
-                                                        </FormField>
-                                                    </Box>
-                                                ):null
-                                            }
-
-                                        </Box>
+                                    <Box width="small" >
+                                        <FormField label="Level" error={errors.level}>
+                                            <TextInput
+                                                name="level"
+                                                value={this.state.createPokemonObj.lv}
+                                                onChange={this._updateLevel}
+                                            />
+                                         </FormField>
+                                    </Box>
+                                    <Box width="small">
+                                        <FormField label="Gender" error={errors.gender}>
+                                            <Box direction="row">
+                                                <Box pad={{ horizontal: "small", vertical: "xsmall" }} direction="row">
+                                                    <CheckBox id="1" label="Male" values={values.gender = this.state.maleChecked? "1" : null} checked={this.state.maleChecked} onChange={this.onMaleChange} />
+                                                </Box>
+                                                <Box  direction="row">
+                                                    <CheckBox id="2" label="Female" values={values.gender = this.state.femaleChecked? "2" : null} checked={this.state.femaleChecked} onChange={this.onFemaleChange} />
+                                                </Box>
+                                            </Box>
+                                        </FormField>
+                                    </Box>
                                     <FormField label="Nature" error={errors.nature}>
                                         <Select
                                             name="nature"
