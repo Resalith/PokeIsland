@@ -54,6 +54,14 @@ export class AddTeam extends Component {
                 max: 0
             },
             filterPokemonList: [],
+            stats: {
+                HP: [],
+                Attack: [],
+                Defense: [],
+                SpecialAttack: [],
+                SpecialDefense: [],
+                Speed: []
+            },
             gendersDisabled: false,
             natures: [],
             allNaturesObj: null,
@@ -70,12 +78,12 @@ export class AddTeam extends Component {
                 nature: '',
                 item: '',
                 stats: {
-                    hp: 0,
-                    attack: 0,
-                    defense: 0,
-                    specialAttack: 0,
-                    specialDef: 0,
-                    speed: 0
+                    hp: '',
+                    attack: '',
+                    defense: '',
+                    specialAttack: '',
+                    specialDef: '',
+                    speed: ''
                 },
 
             }
@@ -163,6 +171,7 @@ export class AddTeam extends Component {
 
             })
             .catch(error => {
+                console.error("Error getting Items: ", error)
                 this.setState({ error, busy: false });
             });
     }
@@ -186,7 +195,10 @@ export class AddTeam extends Component {
 
     }
 
+    range = (start, stop, step) => Array.from({ length: (stop - start) / step + 1}, (_, i) => start + (i * step));
+
     _getStats(){
+
         if (this.state.createPokemonObj.number !== '' && this.state.createPokemonObj.form !== '' && this.state.createPokemonObj.nature !== '' && this.state.createPokemonObj.lv !== ''){
             const range = (start, stop, step) => Array.from({ length: (stop - start) / step + 1}, (_, i) => start + (i * step));
             getStats(this.state.createPokemonObj.number, this.state.createPokemonObj.form, this.state.createPokemonObj.nature, this.state.createPokemonObj.lv)
@@ -218,8 +230,16 @@ export class AddTeam extends Component {
                             min: response.data.min[5],
                             max: response.data.max[5]
                         },
+                        stats: {
+                            hp: range(response.data.min[0], response.data.max[0], 1),
+                            attack: range(response.data.min[1], response.data.max[1], 1),
+                            defense: range(response.data.min[2], response.data.max[2], 1),
+                            specialAttack: range(response.data.min[3], response.data.max[3], 1),
+                            specialDef: range(response.data.min[4], response.data.max[4], 1),
+                            speed: range(response.data.min[5], response.data.max[5], 1),
+                        },
                         busy: false,
-                    }, () => console.log("MIN/MAX STATS Updated: ", this.state));
+                    }, () => console.log("MIN/MAX STATS Updated: ", this.state.stats));
                 })
                 .catch(error => {
                     this.setState({ error, busy: false });
@@ -283,6 +303,20 @@ export class AddTeam extends Component {
                 lv: event.target.value
             }
         }, () => {console.log("Pokemon LEVEL Updated: ", this.state.createPokemonObj); this._getStats();});
+
+    }
+
+    _updateStats(stat, value){
+        console.log("Will try to update: ", this.state.createPokemonObj.stats[stat])
+        this.setState({
+            createPokemonObj: {
+                ...this.state.createPokemonObj,
+                stats: {
+                    ...this.state.createPokemonObj.stats,
+                    [stat]:value
+                }
+            }
+        }, () => console.log("Pokemon STATS Updated: ", this.state.createPokemonObj))
 
     }
 
@@ -415,9 +449,81 @@ export class AddTeam extends Component {
                                             }}
                                         />
                                     </FormField>
+                                    <Box direction="row">
+                                    <FormField label="HP" error={errors.hp}>
+                                        <Select
+                                            name="hp"
+                                            size="medium"
+                                            placeholder="Select"
+                                            value={this.state.createPokemonObj.stats.hp}
+                                            options={this.state.stats.hp ? this.state.stats.hp : []}
+                                            onChange={({ option }) => this._updateStats('hp', option)}
+
+                                        />
+                                    </FormField>
+                                    <FormField label="Attack" error={errors.attack}>
+                                        <Select
+                                            name="attack"
+                                            size="medium"
+                                            placeholder="Select"
+                                            value={this.state.createPokemonObj.stats.attack}
+                                            options={this.state.stats.attack ? this.state.stats.attack : []}
+                                            onChange={({ option }) => this._updateStats('attack', option)}
+
+                                        />
+                                    </FormField>
+                                    </Box>
+                                    <Box direction="row">
+                                        <FormField label="Defense" error={errors.defense}>
+                                            <Select
+                                                name="defense"
+                                                size="medium"
+                                                placeholder="Select"
+                                                value={this.state.createPokemonObj.stats.defense}
+                                                options={this.state.stats.defense ? this.state.stats.defense : []}
+                                                onChange={({ option }) => this._updateStats('defense', option)}
+
+                                            />
+                                        </FormField>
+                                        <FormField label="Special Attack" error={errors.specialAttack}>
+                                            <Select
+                                                name="specialAttack"
+                                                size="medium"
+                                                placeholder="Select"
+                                                value={this.state.createPokemonObj.stats.specialAttack}
+                                                options={this.state.stats.specialAttack ? this.state.stats.specialAttack : []}
+                                                onChange={({ option }) => this._updateStats('specialAttack', option)}
+
+                                            />
+                                        </FormField>
+                                    </Box>
+                                    <Box direction="row">
+                                        <FormField label="Special Defense" error={errors.specialDef}>
+                                            <Select
+                                                name="specialDef"
+                                                size="medium"
+                                                placeholder="Select"
+                                                value={this.state.createPokemonObj.stats.specialDef}
+                                                options={this.state.stats.specialDef ? this.state.stats.specialDef : []}
+                                                onChange={({ option }) => this._updateStats('specialDef', option)}
+
+                                            />
+                                        </FormField>
+                                        <FormField label="Speed" error={errors.speed}>
+                                            <Select
+                                                name="speed"
+                                                size="medium"
+                                                placeholder="Select"
+                                                value={this.state.createPokemonObj.stats.speed}
+                                                options={this.state.stats.speed ? this.state.stats.speed : []}
+                                                onChange={({ option }) => this._updateStats('speed', option)}
+
+                                            />
+                                        </FormField>
+                                    </Box>
                                     <Box
                                         tag="footer"
-                                        margin={{ top: "medium" }}
+                                        margin={{ top: "medium", bottom: "large"}}
                                         direction="row"
                                         justify="between"
                                     >
