@@ -11,7 +11,7 @@ import {
     RadioButton,
     CheckBox
 } from "grommet";
-import {getPokemonsObj, getPokemonForms, getNatures, getItems, getStats} from "../Functions/Backend";
+import {getPokemonsObj, getPokemonForms, getNatures, getItems, getStats, getPokemonMoves} from "../Functions/Backend";
 
 export class AddTeam extends Component {
 
@@ -24,6 +24,8 @@ export class AddTeam extends Component {
             submitted: false,
             allPokemon: {},
             forms: [],
+            moves: [],
+            moveSelected: '',
             allItemsObj: [],
             filterItems: [],
             itemsList: [],
@@ -160,6 +162,24 @@ export class AddTeam extends Component {
         return forms
     }
 
+    _getMoves(pokeNumber, form){
+        let moves = []
+        getPokemonMoves(pokeNumber, form, 'es')
+            .then(response => {
+                //if (this.state.debug) console.log('Forms Response Data', response.data)
+                moves = response.data.map(poke => poke['moves'])
+                if (this.state.debug) console.log("Pokemon Moves: ", moves)
+                this.setState({
+                    moves: response.data
+                }, () => console.log("Moves Available: ", this.state.moves))
+
+            })
+            .catch(error => {
+                this.setState({ error, busy: false });
+            });
+        return moves
+    }
+
     _getItems(){
         getItems('es')
             .then(response => {
@@ -248,6 +268,8 @@ export class AddTeam extends Component {
     }
 
 
+
+
     _updateNature(nature){
         const natureSelected = this.state.allNaturesObj.find(n => n['nature'] === nature)
 
@@ -270,7 +292,19 @@ export class AddTeam extends Component {
                 form: formSelected.number
             },
             formSelected: value
-        }, () => {this._getStats(); console.log("Pokemon FORM Updated: ", this.state.createPokemonObj)})
+        }, () => {this._getStats(); this._getMoves(this.state.createPokemonObj.number, formSelected.number); console.log("Pokemon FORM Updated: ", this.state.createPokemonObj)})
+
+    }
+
+    _updateMove(value){
+        const moveSelected = this.state.moves.find(move => move['moves'] === value)
+        this.setState({
+            createPokemonObj: {
+                ...this.state.createPokemonObj,
+                moves: moveSelected.number
+            },
+            moveSelected: value
+        }, () => {console.log("Pokemon MOVES Updated:", this.state.createPokemonObj);})
 
     }
 
@@ -521,6 +555,18 @@ export class AddTeam extends Component {
                                             />
                                         </FormField>
                                     </Box>
+                                    <FormField label="Moves" error={errors.moves}>
+                                        <Select
+                                            name="moves"
+                                            size="medium"
+                                            placeholder="Select"
+                                            value={this.state.moveSelected}
+                                            options={this.state.moves ? this.state.moves.map(form => form['moves']): []}
+                                            onChange={({ option }) => this._updateMove(option)}
+
+                                        />
+
+                                    </FormField>
                                     <Box
                                         tag="footer"
                                         margin={{ top: "medium", bottom: "large"}}
