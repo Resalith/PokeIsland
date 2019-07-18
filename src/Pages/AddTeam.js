@@ -24,7 +24,8 @@ export class AddTeam extends Component {
             submitted: false,
             allPokemon: {},
             forms: [],
-            moves: [],
+            availableMoves: [],
+            filterMoves: [],
             moveSelected: '',
             allItemsObj: [],
             filterItems: [],
@@ -78,6 +79,7 @@ export class AddTeam extends Component {
                 gender: '',
                 lv: '',
                 nature: '',
+                moves: [],
                 item: '',
                 stats: {
                     hp: '',
@@ -168,10 +170,11 @@ export class AddTeam extends Component {
             .then(response => {
                 //if (this.state.debug) console.log('Forms Response Data', response.data)
                 moves = response.data.map(poke => poke['moves'])
-                if (this.state.debug) console.log("Pokemon Moves: ", moves)
                 this.setState({
-                    moves: response.data
-                }, () => console.log("Moves Available: ", this.state.moves))
+                    movesList: moves,
+                    filterMovesList: moves,
+                    allMoves: response.data
+                }, () => console.log("Moves Available: ", this.state.filterMovesList))
 
             })
             .catch(error => {
@@ -296,14 +299,13 @@ export class AddTeam extends Component {
 
     }
 
-    _updateMove(value){
-        const moveSelected = this.state.moves.find(move => move['moves'] === value)
+    _updateMoves(value){
+        const moveSelected = this.state.allMoves.find(move => move['moves'] === value)
         this.setState({
             createPokemonObj: {
                 ...this.state.createPokemonObj,
-                moves: moveSelected.number
-            },
-            moveSelected: value
+                moves: this.state.moves.push(moveSelected.number)
+            }
         }, () => {console.log("Pokemon MOVES Updated:", this.state.createPokemonObj);})
 
     }
@@ -406,7 +408,7 @@ export class AddTeam extends Component {
                                                     const exp = new RegExp(text, "i");
                                                     this.setState({
                                                         filterPokemonList: this.state.pokemonList.filter(o => exp.test(o))
-                                                    }, () => console.log("onSearch:", text));
+                                                    }, () => console.log("On Pokemon Search:", text));
                                                 }}
                                             />
                                         </FormField>
@@ -559,10 +561,21 @@ export class AddTeam extends Component {
                                         <Select
                                             name="moves"
                                             size="medium"
+                                            multiple
                                             placeholder="Select"
                                             value={this.state.moveSelected}
-                                            options={this.state.moves ? this.state.moves.map(form => form['moves']): []}
-                                            onChange={({ option }) => this._updateMove(option)}
+                                            options={this.state.filterMovesList ? this.state.filterMovesList: []}
+                                            onChange={({ value: nextValue }) =>
+                                                this.setState({ moveSelected: nextValue }, () => console.log("moveSelected: ", this.state.moveSelected))
+
+                                            }
+                                            onClose={() => this.setState({ filterMovesList: this.state.movesList })}
+                                            onSearch={text => {
+                                                const exp = new RegExp(text, "i");
+                                                this.setState({
+                                                    filterMovesList: this.state.movesList.filter(o => exp.test(o))
+                                                }, () => console.log("On Moves Search:", text));
+                                            }}
 
                                         />
 
