@@ -168,7 +168,7 @@ export class AddTeam extends Component {
         let moves = []
         getPokemonMoves(pokeNumber, form, 'es')
             .then(response => {
-                //if (this.state.debug) console.log('Forms Response Data', response.data)
+                if (this.state.debug) console.log('All Moves: ', response.data)
                 moves = response.data.map(poke => poke['moves'])
                 this.setState({
                     movesList: moves,
@@ -299,14 +299,19 @@ export class AddTeam extends Component {
 
     }
 
-    _updateMoves(value){
-        const moveSelected = this.state.allMoves.find(move => move['moves'] === value)
-        this.setState({
-            createPokemonObj: {
-                ...this.state.createPokemonObj,
-                moves: this.state.moves.push(moveSelected.number)
-            }
-        }, () => {console.log("Pokemon MOVES Updated:", this.state.createPokemonObj);})
+    _updateMoves(move){
+
+        const moveSelected = move.map((m => this.state.allMoves.find(move => move['moves'] === m)))
+        const numbers = moveSelected.map(function(item) { return item['number']; });
+
+        if (numbers.length <= 4){
+            this.setState({
+                createPokemonObj: {
+                    ...this.state.createPokemonObj,
+                    moves: numbers
+                }
+            }, () => {console.log("Pokemon MOVES Updated:", this.state.createPokemonObj);})
+        }
 
     }
 
@@ -566,7 +571,7 @@ export class AddTeam extends Component {
                                             value={this.state.moveSelected}
                                             options={this.state.filterMovesList ? this.state.filterMovesList: []}
                                             onChange={({ value: nextValue }) =>
-                                                this.setState({ moveSelected: nextValue }, () => console.log("moveSelected: ", this.state.moveSelected))
+                                                this.setState({ moveSelected: nextValue }, () => this._updateMoves(nextValue))
 
                                             }
                                             onClose={() => this.setState({ filterMovesList: this.state.movesList })}
