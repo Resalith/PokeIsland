@@ -9,9 +9,12 @@ import {
     TextInput,
     RadioButtonGroup,
     RadioButton,
-    CheckBox
+    CheckBox,
+    Layer,
+    Text
 } from "grommet";
 import {getPokemonsObj, getPokemonForms, getNatures, getItems, getStats, getPokemonMoves} from "../Functions/Backend";
+import {HiddenPowers} from "../Functions/StaticData";
 
 export class AddTeam extends Component {
 
@@ -28,6 +31,7 @@ export class AddTeam extends Component {
             filterMoves: [],
             moveSelected: '',
             allItemsObj: [],
+            maxMoves: false,
             filterItems: [],
             itemsList: [],
             itemSelected: '',
@@ -57,6 +61,7 @@ export class AddTeam extends Component {
                 max: 0
             },
             filterPokemonList: [],
+            hiddenPowerSelected: '',
             stats: {
                 HP: [],
                 Attack: [],
@@ -70,6 +75,8 @@ export class AddTeam extends Component {
             allNaturesObj: null,
             natureSelected: '',
             formSelected: '',
+            hiddenPower: '',
+            hiddenPowerDisabled: true,
             selectedPokemonForms: [],
             createPokemonObj: {
                 number: '',
@@ -299,19 +306,54 @@ export class AddTeam extends Component {
 
     }
 
+    _updateHiddenPower = (value) => {
+        this.setState({
+            createPokemonObj: {
+                ...this.state.createPokemonObj,
+                hiddenPower: value
+            },
+            hiddenPowerSelected: value
+        }, () => console.log("Pokemon HIDDEN POWER Updated: ", this.state.createPokemonObj))
+    }
+
     _updateMoves(move){
 
         const moveSelected = move.map((m => this.state.allMoves.find(move => move['moves'] === m)))
         const numbers = moveSelected.map(function(item) { return item['number']; });
 
-        if (numbers.length <= 4){
+
+
+        let hiddenPower = numbers.find(number => {return number === '237'})
+
+        if (hiddenPower){
+            console.log("hidden Power found")
+
+            this.setState({
+                hiddenPowerDisabled: false
+            })
+        }else {
+            console.log("hidden Power not found")
+            this.setState({
+                hiddenPowerDisabled: true,
+                createPokemonObj: {
+                    ...this.state.createPokemonObj,
+                    hiddenPower: ''
+                },
+                hiddenPowerSelected: ''
+            }, () => console.log("Pokemon Moves / HIDDEN POWER Updated: ", this.state.createPokemonObj))
+        }
+
+        if (move.length === 4 ){
+            this.setState({maxMoves: true})
+        }
+
             this.setState({
                 createPokemonObj: {
                     ...this.state.createPokemonObj,
                     moves: numbers
                 }
             }, () => {console.log("Pokemon MOVES Updated:", this.state.createPokemonObj);})
-        }
+
 
     }
 
@@ -361,9 +403,47 @@ export class AddTeam extends Component {
 
     }
 
+    onMaxMovesClose = () => this.setState({ maxMoves: undefined });
 
     render() {
-        const { submitted } = this.state;
+        const { submitted, maxMoves } = this.state;
+
+        if (maxMoves){
+            return (
+                <Layer
+                    position="center"
+                    modal
+                    onClickOutside={this.onClose}
+                    onEsc={this.onClose}
+                >
+                    <Box pad="medium" gap="small" width="medium">
+                        <Heading level={3} margin="none">
+                            4 Moves Selected
+                        </Heading>
+                        <Text>You have selected the max amount of moves</Text>
+                        <Box
+                            as="footer"
+                            gap="small"
+                            direction="row"
+                            align="center"
+                            justify="end"
+                            pad={{ top: "medium", bottom: "small" }}
+                        >
+                            <Button
+                                label={
+                                    <Text color="white">
+                                        <strong>Ok</strong>
+                                    </Text>
+                                }
+                                onClick={this.onMaxMovesClose}
+                                primary
+                                color="status-critical"
+                            />
+                        </Box>
+                    </Box>
+                </Layer>
+            )
+        }
 
         return (
                 <Box align="start">
@@ -567,12 +647,15 @@ export class AddTeam extends Component {
                                             name="moves"
                                             size="medium"
                                             multiple
+                                            dropAlign={{bottom: 'top'}}
                                             placeholder="Select"
                                             value={this.state.moveSelected}
                                             options={this.state.filterMovesList ? this.state.filterMovesList: []}
-                                            onChange={({ value: nextValue }) =>
-                                                this.setState({ moveSelected: nextValue }, () => this._updateMoves(nextValue))
-
+                                            onChange={({ value: nextValue }) =>{
+                                                if (nextValue.length <= 4 ){
+                                                    this.setState({ moveSelected: nextValue}, () => this._updateMoves(nextValue))
+                                                }
+                                            }
                                             }
                                             onClose={() => this.setState({ filterMovesList: this.state.movesList })}
                                             onSearch={text => {
@@ -581,6 +664,19 @@ export class AddTeam extends Component {
                                                     filterMovesList: this.state.movesList.filter(o => exp.test(o))
                                                 }, () => console.log("On Moves Search:", text));
                                             }}
+
+                                        />
+
+                                    </FormField>
+                                    <FormField label="Hidden Power" error={errors.hiddenPower}>
+                                        <Select
+                                            name="hiddenPower"
+                                            size="medium"
+                                            disabled = {this.state.hiddenPowerDisabled}
+                                            placeholder="Select"
+                                            value={this.state.hiddenPowerSelected}
+                                            options={HiddenPowers}
+                                            onChange={({ option }) => this._updateHiddenPower(option)}
 
                                         />
 
